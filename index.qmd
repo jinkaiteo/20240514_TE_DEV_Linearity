@@ -1,108 +1,190 @@
 ---
-title: La Palma Earthquakes
-author:
-  - name: Steve Purves
-    orcid: 0000-0002-0760-5497
-    corresponding: true
-    email: steve@curvenote.com
-    roles:
-      - Investigation
-      - Project administration
-      - Software
-      - Visualization
-    affiliations:
-      - Curvenote
-  - name: Rowan Cockett
-    orcid: 0000-0002-7859-8394
+title: Linearity for Tranduction Efficiency Assay Qualification
+authors:
+  - name: Adeline Chew
+    affiliation: Tikva Allocell Pte. Ltd.
+    roles: writing
     corresponding: false
-    roles: []
-    affiliations:
-      - Curvenote
-keywords:
-  - La Palma
-  - Earthquakes
-abstract: |
-  In September 2021, a significant jump in seismic activity on the island of La Palma (Canary Islands, Spain) signaled the start of a volcanic crisis that still continues at the time of writing. Earthquake data is continually collected and published by the Instituto Geográphico Nacional (IGN). ...
-plain-language-summary: |
-  Earthquake data for the island of La Palma from the September 2021 eruption is found ...
-key-points:
-  - A web scraping script was developed to pull data from the Instituto Geogràphico Nacional into a machine-readable form for analysis
-  - Earthquake events on La Palma are consistent with the presence of both mantle and crustal reservoirs.
-date: last-modified
-bibliography: references.bib
-citation:
-  container-title: Earth and Space Science
+  - name: Yu Xin Lim
+    affiliation: Tikva Allocell Pte. Ltd.
+    roles: writing
+    corresponding: false
+  - name: Jinkai Teo
+    affiliation: Tikva Allocell Pte. Ltd.
+    roles: writing
+    corresponding: true
+    email: jinkaiteo@tikvaallocell.com
+    orcid: 0009-0005-0663-2118
+bibliography: 
+  - references.bib
+  - grateful-refs.bib
 number-sections: true
 ---
 
 ## Introduction
 
-```{r}
-eruptions <- c(1492, 1585, 1646, 1677, 1712, 1949, 1971, 2021)
-n_eruptions <- length(eruptions)
+This report documents the statistical analysis performed for the linearity of the Transduction Efficiency (TE) Assay. This document is intended to be read as part of the qualification report for Tranduction Efficiency. In brief, the TE assay employs a flow cytometry method to establish the proportion of transduced cells in the test article (cell suspension). In the manufacturing of the CART cells, B7-H3 and Serpin B9 (CAS) were introduced into the T cells via transduction using a replication-incompetent retrovirus vector. Fluorescent-labeled antibodies targeting the VHH and T2A were used to label the B7-H3.CAR and the transduced Serpin B9 (CAS). The proportion of the positively stained cells (B7-H3 and Serpin B9 (CAS) positive) out of the total amount of cells in the cell suspension is reported as the Transduction Efficiency.
+
+```{r packages, echo=FALSE, warning=FALSE, output = FALSE}
+library(tidyverse)
+library(kableExtra)
+library(grateful)
+library(jtools)
+library(huxtable)
+library(broom)
+library(flextable)
+library(webshot2)
+cite_packages(out.dir = ".")
 ```
 
-```{r}
-#| label: fig-timeline
-#| fig-cap: Timeline of recent earthquakes on La Palma
-#| fig-alt: An event plot of the years of the last 8 eruptions on La Palma.
-#| fig-height: 1.5
-#| fig-width: 6
-par(mar = c(3, 1, 1, 1) + 0.1)
-plot(eruptions, rep(0, n_eruptions), 
-  pch = "|", axes = FALSE)
-axis(1)
-box()
+## Data generated for Linearity
+
+The IHC harmonized tripartite guideline [@Borman_Elder_2017] defines linearity as:
+
+::: {.callout-note title="IHC Guidlines"}
+A linear relationship should be evaluated across the range of the analytical procedure. It may be demonstrated directly on the drug substance (by dilution of a standard stock solution) and/or separate weighings of synthetic mixtures of the drug product components, using the proposed procedure. The latter aspect can be studied during investigation of the range.
+:::
+
+In line with this guidance, samples with different transduction efficient were generated using CART cells expressing the B7-H3 CAR antigen (drug substance, DS) are diluted at various known ration (volume per volume) with untransduced T cells that does not express the CAR on the surface, as shown in @tbl-rawdata. The expected transduction efficiency was normalized based on the 100%(v/v) and 0 %(v/v). These set of samples were ran by two operators across three days to incorporate inter-operator and inter-day variations.
+
+```{r data}
+rawdata <- "Operator	Day	day-mean	Expected
+Operator 1	Day1	83.62	84.55055556
+Operator 1	Day2	84.16	84.55055556
+Operator 1	Day3	84.73	84.55055556
+Operator 2	Day1	84.26333333	84.55055556
+Operator 2	Day2	83.25	84.55055556
+Operator 2	Day3	87.28	84.55055556
+Operator 1	Day1	69.7	67.64111111
+Operator 1	Day2	67.39333333	67.64111111
+Operator 1	Day3	68.44	67.64111111
+Operator 2	Day1	68.34	67.64111111
+Operator 2	Day2	68.26333333	67.64111111
+Operator 2	Day3	68.48	67.64111111
+Operator 1	Day1	52.28	50.73166667
+Operator 1	Day2	51.54	50.73166667
+Operator 1	Day3	49.99	50.73166667
+Operator 2	Day1	52.43	50.73166667
+Operator 2	Day2	50.61	50.73166667
+Operator 2	Day3	49.11	50.73166667
+Operator 1	Day1	33.49333333	33.82222222
+Operator 1	Day2	33.33	33.82222222
+Operator 1	Day3	33.43	33.82222222
+Operator 2	Day1	33.79333333	33.82222222
+Operator 2	Day2	32.43	33.82222222
+Operator 2	Day3	32.38	33.82222222
+Operator 1	Day1	16.85	16.91277778
+Operator 1	Day2	14.81333333	16.91277778
+Operator 1	Day3	13.65	16.91277778
+Operator 2	Day1	16.84	16.91277778
+Operator 2	Day2	14.94	16.91277778
+Operator 2	Day3	13.7	16.91277778
+Operator 1	Day1	0	0.003333333
+Operator 1	Day2	0	0.003333333
+Operator 1	Day3	0.013333333	0.003333333
+Operator 2	Day1	0	0.003333333
+Operator 2	Day2	0	0.003333333
+Operator 2	Day3	0.006666667	0.003333333
+"
+tab_data <- read.table(text = rawdata, sep = "\t", header = TRUE)
+
+tab_data <- tab_data %>% dplyr::arrange(Operator, Day, Expected)
 ```
 
-```{r}
-#| output: false
-avg_years_between_eruptions <- mean(diff(eruptions[-n_eruptions]))
-avg_years_between_eruptions
+```{r rawdata}
+#| label: tbl-rawdata
+#| tbl-cap: "Data generated for linearity in qualification"
+
+tab_data %>% kableExtra::kbl(col.names = c(
+  "Operator", "Day", "Observed (%TE)", "Expected (%TE)"
+), digits = 2, align = "c") %>% 
+  kableExtra::collapse_rows(column = c(1, 2)) %>%
+  kable_classic_2()
 ```
 
-Based on data up to and including 1971, eruptions on La Palma happen every `r round(avg_years_between_eruptions, 1)` years on average.
+## Methods
 
-Studies of the magma systems feeding the volcano, such as @marrero2019, have proposed that there are two main magma reservoirs feeding the Cumbre Vieja volcano; one in the mantle (30-40km depth) which charges and in turn feeds a shallower crustal reservoir (10-20km depth).
+Taking reference to the IHC harmonized tripartite guideline [@Borman_Elder_2017]:
 
-Eight eruptions have been recorded since the late 1400s (@fig-timeline).
+::: {.callout-note title="IHC Guidlines"}
+Linearity should be evaluated by visual inspection of a plot of signals as a function of analyte concentration or content. If there is a linear relationship, test results should be evaluated by appropriate statistical methods, for example, by calculation of a regression line by the method of least squares. In some cases, to obtain linearity between assays and sample concentrations, the test data may need to be subjected to a mathematical transformation prior to the regression analysis. Data from the regression line itself may be helpful to provide mathematical estimates of the degree of linearity.
 
-Data and methods are discussed in @sec-data-methods.
+The correlation coefficient, y-intercept, slope of the regression line and residual sum of squares should be submitted. A plot of the data should be included. In addition, an analysis of the deviation of the actual data points from the regression line may also be helpful for evaluating linearity.
+:::
 
-Let $x$ denote the number of eruptions in a year. Then, $x$ can be modeled by a Poisson distribution
+A similar method was employed in this analysis where a linear model is used for the regression of the data collected within each operator within the same day.
 
-$$
-p(x) = \frac{e^{-\lambda} \lambda^{x}}{x !}
-$$ {#eq-poisson}
+```{r citingPKG}
+cite_packages(output = "paragraph", out.dir = ".")
+```
 
-where $\lambda$ is the rate of eruptions per year. Using @eq-poisson, the probability of an eruption in the next $t$ years can be calculated.
+## Results
+```{r ssError}
+regression_list <- list()
+anova_list <- data.frame()
 
-| Name                 | Year   |
-| -------------------- | ------ |
-| Current              | 2021   |
-| Teneguía             | 1971   |
-| Nambroque            | 1949   |
-| El Charco            | 1712   |
-| Volcán San Antonio   | 1677   |
-| Volcán San Martin    | 1646   |
-| Tajuya near El Paso  | 1585   |
-| Montaña Quemada      | 1492   |
+for (i in unique(tab_data$Operator)) {
+  
+  i_data <- tab_data %>% dplyr::filter(Operator == i)
+  
+  for (j in unique(i_data$Day)) {
+    
+    j_data <- tab_data %>% dplyr::filter(Operator == i, Day == j)
+    reg_ij <- stats::lm(data = j_data, formula = day.mean ~ Expected)
+    SSmodel_ij <- stats::anova(reg_ij) %>% cbind(Operator = i, Day = j)
+    SSmodel_ij$Terms <- rownames(SSmodel_ij)
+    rownames(SSmodel_ij) <- NULL
+    anova_list <- anova_list %>% rbind(SSmodel_ij)
+    regression_list[[paste(i, j, collapse = ".", sep = ", ")]] <- reg_ij
+    
+  }
+}
 
-: Recent historic eruptions on La Palma {#tbl-history}
+anova_list_model <- anova_list %>% dplyr::filter(Terms == "Expected") %>% dplyr::select(Operator, Day, `Sum Sq`, `F value`, `Pr(>F)`) %>% dplyr::rename(Model = `Sum Sq`)
+anova_list_Error <- anova_list %>% dplyr::filter(Terms == "Residuals") %>% dplyr::select(Operator, Day, `Sum Sq`) %>% dplyr::rename(Error = `Sum Sq`)
 
-@tbl-history summarises the eruptions recorded since the colonization of the islands by Europeans in the late 1400s.
+anova_list_SS <- anova_list_Error %>% dplyr::left_join(anova_list_model, by = c("Operator", "Day")) %>% dplyr::mutate(Total = Error + Model) %>% 
+  select(Operator, Day, Error, Model, Total, `F value`, `Pr(>F)`)
+```
 
-![Map of La Palma](images/la-palma-map.png){#fig-map}
+The y-intercept, slope and R2 are summarized in @tbl-reg, while the sum of squares are summarized in @tbl-ss.
 
-La Palma is one of the west most islands in the Volcanic Archipelago of the Canary Islands (@fig-map). 
+```{r regression}
+#| label: tbl-reg
+#| tbl-cap: "Regression parameters for linearity results"
 
-{{< embed notebooks/explore-earthquakes.qmd#fig-spatial-plot >}}
+export_summs(regression_list)
+```
 
-@fig-spatial-plot shows the location of recent Earthquakes on La Palma.
+```{r sum-of-squares}
+#| label: tbl-ss
+#| tbl-cap: "Sum of squares for linearity results"
 
-## Data & Methods {#sec-data-methods}
+anova_list_SS %>% kableExtra::kbl(digits = 2, align = "c") %>% 
+  kableExtra::collapse_rows(column = c(1)) %>%
+  add_header_above(c(" ", " ", "Sum of Squares" = 3, "Model Fit" = 2)) %>% 
+  kable_classic_2()
+```
+
+@fig-regression summarizes in a plot, the various linearity samples across the two operators and 3 days.
+
+```{r linearRegression}
+#| label: fig-regression
+#| fig-cap: "Linear regression of linearity samples within each operator across the three days."
+
+ggplot2::ggplot(data = tab_data, aes(x = Expected, y = day.mean, group = Operator)) + 
+  ggplot2::geom_smooth(method = "lm", aes(color = "red")) +
+  ggplot2::geom_point(aes(shape = Day)) +
+  ggplot2::facet_grid(cols = vars(Operator)) +
+  ggplot2::labs(x = "Expected TE%", y = "Observed TE%") + 
+  ggplot2::theme_light() + 
+  guides(fill = "none", color = "none", linetype = "none")
+```
 
 ## Conclusion
+
+The data from this set of data support the claim of linearity of the Transduction Efficiency (TE) Assay over the range from 0 to 80% TE.
+
 
 ## References {.unnumbered}
 
